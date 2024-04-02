@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
+	"sort"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -74,7 +74,15 @@ func main() {
 	}
 }
 
+
 func mapToYaml(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Start constructing the YAML string
 	yaml := "apiVersion: v1\n"
 	yaml += "kind: Secret\n"
 	yaml += "metadata:\n"
@@ -82,8 +90,12 @@ func mapToYaml(m map[string]string) string {
 	yaml += "  namespace: " + viper.GetString("namespace") + "\n"
 	yaml += "type: Opaque\n"
 	yaml += "stringData:\n"
-	for key, value := range m {
-		yaml += fmt.Sprintf("  %s: %s\n", key, value)
+	for _, key := range keys {
+		value := m[key]
+		// Check if value is not empty when whitespace is trimmed
+		if strings.TrimSpace(value) != "" {
+			yaml += fmt.Sprintf("  %s: %s\n", key, strings.TrimSpace(value))
+		}
 	}
 	return yaml
 }
